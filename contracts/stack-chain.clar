@@ -168,3 +168,22 @@
     (ok true)
   )
 )
+
+;; Deposits tokens into the rollup
+(define-public (deposit 
+  (amount uint)
+  (token-identifier uint)
+)
+  (begin
+    (asserts! (is-valid-uint amount) ERR_INVALID_INPUT)
+    (asserts! (is-valid-uint token-identifier) ERR_INVALID_INPUT)
+    
+    (try! (stx-transfer? amount tx-sender (as-contract tx-sender)))
+    
+    (map-set user-balances 
+      { user: tx-sender, token-identifier: token-identifier } 
+      amount
+    )
+    (ok true)
+  )
+)
