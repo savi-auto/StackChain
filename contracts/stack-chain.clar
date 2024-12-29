@@ -263,3 +263,41 @@
     (ok true)
   )
 )
+
+;; Resolves a challenge against a state commitment
+(define-public (resolve-challenge 
+  (challenge-block uint)
+  (commitment-hash (buff 32))
+)
+  (let 
+    (
+      (challenge 
+        (map-get? challenges 
+          { challenge-block: challenge-block, challenger: tx-sender }
+        )
+      )
+      (commitment 
+        (map-get? state-commitments 
+          { commitment-block: challenge-block, commitment-hash: commitment-hash }
+        )
+      )
+    )
+    (asserts! (is-valid-uint challenge-block) ERR_INVALID_INPUT)
+    (asserts! (is-valid-commitment-hash commitment-hash) ERR_INVALID_INPUT)
+    (asserts! (is-some challenge) ERR_INVALID_COMMITMENT)
+    (asserts! (is-some commitment) ERR_INVALID_COMMITMENT)
+    (ok true)
+  )
+)
+
+;; Gets the balance of a user for a specific token
+(define-read-only (get-user-balance 
+  (user principal) 
+  (token-identifier uint)
+)
+  (default-to u0 
+    (map-get? user-balances 
+      { user: user, token-identifier: token-identifier }
+    )
+  )
+)
