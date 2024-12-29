@@ -85,3 +85,57 @@
 (define-private (validate-merkle-proof (proof (buff 256)))
   (> (len proof) u10)
 )
+;; Public Functions
+
+;; Registers a new operator for the rollup
+(define-public (register-operator)
+  (begin
+    (asserts! 
+      (and 
+        (is-none (map-get? operators tx-sender))
+        (is-eq tx-sender (var-get contract-owner))
+      ) 
+      ERR_UNAUTHORIZED
+    )
+    (map-set operators 
+      tx-sender 
+      { is-active: true }
+    )
+    (ok true)
+  )
+)
+
+;; Submits a new state commitment
+(define-public (submit-state-commitment 
+  (commitment-block uint)
+  (commitment-hash (buff 32))
+  (total-transactions uint)
+  (total-value uint)
+  (root-hash (buff 32))
+)
+  (let 
+    ((operator-status (map-get? operators tx-sender)))
+    (asserts! (is-some operator-status) ERR_INVALID_OPERATOR)
+    (asserts! 
+      (match operator-status status (get is-active status) false) 
+      ERR_INVALID_OPERATOR
+    )
+    (asserts! (is-valid-uint commitment-block) ERR_INVALID_INPUT)
+    (asserts! (is-valid-commitment-hash commitment-hash) ERR_INVALID_INPUT)
+    (asserts! (is-valid-uint total-transactions) ERR_INVALID_INPUT)
+    (asserts! (is-valid-uint total-value) ERR_INVALID_INPUT)
+    (asserts! (is-valid-commitment-hash root-hash) ERR_INVALID_INPUT)
+    
+    (try! (stx-transfer? u1000 tx-sender (as-contract tx-sender)))
+    
+    (map-set state-commitments 
+      { commitment-block: commitment-block, commitment-hash: commitment-hash }
+      {
+        total-transactions: total-transactions,
+        total-value: total-value,
+        root-hash: root-hash
+      }
+    )
+    (ok true)
+  )
+)
