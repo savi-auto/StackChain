@@ -187,3 +187,79 @@
     (ok true)
   )
 )
+
+;; Withdraws tokens from the rollup
+(define-public (withdraw 
+  (amount uint)
+  (token-identifier uint)
+  (merkle-proof (buff 256))
+)
+  (let 
+    (
+      (user-balance 
+        (default-to u0 
+          (map-get? user-balances 
+            { user: tx-sender, token-identifier: token-identifier }
+          )
+        )
+      )
+    )
+    (asserts! (is-valid-uint amount) ERR_INVALID_INPUT)
+    (asserts! (is-valid-uint token-identifier) ERR_INVALID_INPUT)
+    (asserts! (>= user-balance amount) ERR_INSUFFICIENT_FUNDS)
+    (asserts! (validate-merkle-proof merkle-proof) ERR_INVALID_PROOF)
+    
+    (map-set user-balances 
+      { user: tx-sender, token-identifier: token-identifier } 
+      (- user-balance amount)
+    )
+    
+    (as-contract (stx-transfer? amount (as-contract tx-sender) tx-sender))
+  )
+)
+
+;; Transfers tokens between users within the rollup
+(define-public (transfer-in-rollup 
+  (from principal)
+  (to principal)
+  (amount uint)
+  (token-identifier uint)
+)
+  (begin
+    (asserts! (is-valid-principal from) ERR_INVALID_INPUT)
+    (asserts! (is-valid-principal to) ERR_INVALID_INPUT)
+    (asserts! (is-valid-uint amount) ERR_INVALID_INPUT)
+    (asserts! (is-valid-uint token-identifier) ERR_INVALID_INPUT)
+    
+    (let 
+      (
+        (sender-balance 
+          (default-to u0 
+            (map-get? user-balances 
+              { user: from, token-identifier: token-identifier }
+            )
+          )
+        )
+        (recipient-balance 
+          (default-to u0 
+            (map-get? user-balances 
+              { user: to, token-identifier: token-identifier }
+            )
+          )
+        )
+      )
+      (asserts! (>= sender-balance amount) ERR_INSUFFICIENT_FUNDS)
+      
+      (map-set user-balances 
+        { user: from, token-identifier: token-identifier } 
+        (- sender-balance amount)
+      )
+      
+      (map-set user-balances 
+        { user: to, token-identifier: token-identifier } 
+        (+ recipient-balance amount)
+      )
+    )
+    (ok true)
+  )
+)
