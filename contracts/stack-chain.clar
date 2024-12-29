@@ -22,3 +22,45 @@
 (define-constant ERR_INSUFFICIENT_FUNDS (err u5))
 (define-constant ERR_INVALID_INPUT (err u6))
 (define-constant ERR_UNAUTHORIZED (err u7))
+
+;; Data Maps
+
+;; Tracks registered operators and their status
+(define-map operators 
+  principal 
+  { is-active: bool }
+)
+
+;; Stores state commitments with transaction data
+(define-map state-commitments 
+  { 
+    commitment-block: uint, 
+    commitment-hash: (buff 32) 
+  } 
+  {
+    total-transactions: uint,
+    total-value: uint,
+    root-hash: (buff 32)
+  }
+)
+
+;; Tracks user token balances within the rollup
+(define-map user-balances 
+  { 
+    user: principal, 
+    token-identifier: uint 
+  } 
+  uint
+)
+
+;; Stores active challenges and their details
+(define-map challenges 
+  { 
+    challenge-block: uint, 
+    challenger: principal 
+  } 
+  {
+    commitment-hash: (buff 32),
+    challenge-bond: uint
+  }
+)
